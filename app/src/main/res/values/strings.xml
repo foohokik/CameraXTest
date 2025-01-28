@@ -1,3 +1,12 @@
 <resources>
     <string name="app_name">CameraXTest</string>
+    <string name="require_permission_after_refuse">
+        Приложение не может работать без доступа к камере \n
+        Пожалуйста, разрешите приложению юзать камеру
+    </string>
+    <string name="require_permission">
+        Пожалуйста, разрешите приложению юзать камеру
+    </string>
+    <string name="unleash_camera">Откройте камеру</string>
+    <string name="switch_camera">Переключите камеру</string>
 </resources>

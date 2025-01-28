@@ -2,6 +2,8 @@ package com.example.cameraxtest
 
 import android.annotation.SuppressLint
 import android.util.Log
+import androidx.annotation.OptIn
+import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageProxy
 import com.google.android.gms.tasks.TaskExecutors
 import com.google.mlkit.vision.common.InputImage
@@ -32,6 +34,7 @@ class FaceDetectorProcessor {
         detector.close()
     }
 
+    @OptIn(ExperimentalGetImage::class)
     @SuppressLint("UnsafeExperimentalUsageError")
     fun processImageProxy(image: ImageProxy, onDetectionFinished: (List<Face>) -> Unit) {
         detector.process(InputImage.fromMediaImage(image.image!!, image.imageInfo.rotationDegrees))

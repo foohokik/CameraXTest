@@ -2,37 +2,25 @@ package com.example.cameraxtest
 
 import android.content.Context
 import android.util.Log
-import androidx.annotation.OptIn
 import androidx.camera.core.CameraSelector
-import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
-import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.core.SurfaceRequest
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.lifecycle.awaitInstance
-import androidx.camera.view.PreviewView
-import androidx.compose.ui.unit.Constraints
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
+import com.google.android.gms.tasks.TaskExecutors
+import com.google.mlkit.common.MlKitException
+import com.google.mlkit.vision.face.Face
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import com.google.android.gms.tasks.TaskExecutors
-import com.google.common.util.concurrent.ListenableFuture
-import com.google.mlkit.common.MlKitException
-import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.face.Face
-import com.google.mlkit.vision.face.FaceDetection
-import com.google.mlkit.vision.face.FaceDetectorOptions
 
 class CameraViewModel : ViewModel() {
-
-    private var cameraProviderFuture: ListenableFuture<ProcessCameraProvider>? = null
 
     private val _cameraLensFlow = MutableStateFlow(0)
     val cameraLensFlow: StateFlow<Int>
@@ -48,54 +36,30 @@ class CameraViewModel : ViewModel() {
 
 
     suspend fun bindToCamera(
-        previewView: PreviewView,
         appContext: Context,
         lifecycleOwner: LifecycleOwner,
         setSourceInfo: (SourceInfo) -> Unit,
         cameraLens: Int) {
 
-        cameraProviderFuture = ProcessCameraProvider.getInstance(previewView.context)
-        cameraProviderFuture?.addListener(
-            {
-                val cameraSelector = CameraSelector.Builder().requireLensFacing(cameraLens).build()
-
-                val cameraProvider = cameraProviderFuture?.get()
-                val preview = Preview.Builder().build().also {
-                    it.surfaceProvider = previewView.surfaceProvider
-                }
-                val analysis = bindAnalysisUseCase(cameraLens, setSourceInfo)
-                try {
-                    cameraProvider?.apply {
-                        unbindAll()
-                        bindToLifecycle(lifecycleOwner, cameraSelector, preview)
-                        bindToLifecycle(lifecycleOwner, cameraSelector, analysis)
-                    }
-                } catch (exc: Exception) {
-                    TODO("process errors")
-                }
-            }, ContextCompat.getMainExecutor(appContext))
+        val cameraPreviewUseCase = Preview.Builder().build().apply {
+            setSurfaceProvider { newSurfaceRequest ->
+                _surfaceRequests.update { newSurfaceRequest }
             }
+        }
+        val cameraSelector = CameraSelector.Builder().requireLensFacing(cameraLens).build()
+        val processCameraProvider = ProcessCameraProvider.awaitInstance(appContext)
+        val analysis = bindAnalysisUseCase(cameraLens, setSourceInfo)
 
+        processCameraProvider.bindToLifecycle(
+            lifecycleOwner, cameraSelector, cameraPreviewUseCase, analysis
+        )
 
-
-//        val cameraPreviewUseCase = Preview.Builder().build().apply {
-//            setSurfaceProvider { newSurfaceRequest ->
-//                _surfaceRequests.update { newSurfaceRequest }
-//            }
-//        }
-//        val cameraSelector = CameraSelector.Builder().requireLensFacing(cameraLens).build()
-//        val processCameraProvider = ProcessCameraProvider.awaitInstance(appContext)
-//        val analysis = bindAnalysisUseCase(cameraLens, setSourceInfo)
-//
-//        processCameraProvider.bindToLifecycle(
-//            lifecycleOwner, cameraSelector, cameraPreviewUseCase, analysis
-//        )
-//
-//        try {
-//            awaitCancellation()
-//        } finally {
-//            processCameraProvider.unbindAll()
-//        }
+        try {
+            awaitCancellation()
+        } finally {
+            processCameraProvider.unbindAll()
+        }
+    }
 
 
     private fun bindAnalysisUseCase(
@@ -109,8 +73,7 @@ class CameraViewModel : ViewModel() {
             Log.e("CAMERA", "Can not create image processor", e)
             return null
         }
-        val builder = ImageAnalysis.Builder()
-        val analysisUseCase = builder.build()
+        val analysisUseCase = ImageAnalysis.Builder().build()
 
         var sourceInfoUpdated = false
 
