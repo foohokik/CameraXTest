@@ -6,9 +6,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import com.example.cameraxtest.screens.CameraPreviewScreen
+import com.example.cameraxtest.screens.CameraViewModel
 import com.example.cameraxtest.ui.theme.CameraXTestTheme
 
 class MainActivity : ComponentActivity() {
@@ -21,12 +22,9 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize()
                 ) {
                     val viewModel = remember { CameraViewModel() }
-                    val cameraLens = viewModel.cameraLensFlow.collectAsState()
-                    CameraPreviewScreen(viewModel, cameraLens.value)
+                    CameraPreviewScreen(viewModel)
                 }
             }
         }
     }
-
-
 }

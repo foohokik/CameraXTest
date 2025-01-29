@@ -44,4 +44,16 @@ class FaceDetectorProcessor {
             }
             .addOnCompleteListener { image.close() }
     }
+
+    companion object {
+
+        @Volatile
+        private var instance: FaceDetectorProcessor? = null
+        private val LOCK = Any()
+
+        fun getInstance() =
+            instance ?: synchronized(LOCK) {
+                instance ?: FaceDetectorProcessor().also { instance = it }
+            }
+    }
 }
